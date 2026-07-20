@@ -1,0 +1,736 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Omni Chat</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            bg: '#121212',
+                            surface: '#1e1e1e',
+                            border: '#333333'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        
+        /* Markdown Styles inside Chat */
+        .markdown-body p { margin-bottom: 0.75em; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body pre { background: #000; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin: 0.75em 0; border: 1px solid #333; }
+        .markdown-body code { background: #2d2d2d; padding: 0.1em 0.3em; border-radius: 0.25em; font-family: monospace; font-size: 0.9em; }
+        .markdown-body pre code { background: transparent; padding: 0; border-radius: 0; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.75em; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
+        .markdown-body a { color: #3b82f6; text-decoration: underline; }
+        .markdown-body strong { font-weight: bold; color: #fff; }
+
+        /* Prevent auto-zoom on mobile inputs */
+        input, textarea { font-size: 16px !important; }
+
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-gray-200 h-screen w-full overflow-hidden flex font-sans antialiased">
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-20 hidden lg:hidden transition-opacity" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-dark-surface border-r border-dark-border z-30 transform -translate-x-full lg:translate-x-0 lg:static lg:flex transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="p-4 flex items-center justify-between border-b border-dark-border">
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="sparkles" class="text-brand-500"></i>
+                Omni Chat
+            </h1>
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-md hover:bg-gray-800 text-gray-400">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-3">
+            <button onclick="startNewChat()" class="w-full flex items-center gap-2 px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl transition-colors font-medium">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+                New Chat
+            </button>
+        </div>
+
+        <!-- History Toggle Tabs -->
+        <div class="flex border-b border-dark-border px-3 mt-2">
+            <button id="tab-chats" onclick="switchTab('chats')" class="flex-1 pb-2 text-sm font-medium border-b-2 border-brand-500 text-brand-500">Chats</button>
+            <button id="tab-images" onclick="switchTab('images')" class="flex-1 pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300">Images</button>
+        </div>
+
+        <!-- Chat History List -->
+        <div id="chat-history-list" class="flex-1 overflow-y-auto p-3 space-y-1">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Image History List (Hidden by default) -->
+        <div id="image-history-list" class="flex-1 overflow-y-auto p-3 space-y-3 hidden grid-cols-2 gap-2 content-start">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Footer in sidebar -->
+        <div class="p-4 border-t border-dark-border text-xs text-gray-500 text-center">
+            Powered by Gemini & Imagen
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full relative min-w-0">
+        <!-- Top Navigation -->
+        <header class="h-14 flex items-center justify-between px-4 border-b border-dark-border bg-dark-surface/80 backdrop-blur-md z-10 sticky top-0">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-2 rounded-md hover:bg-gray-800 text-gray-400">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="flex items-center gap-2 group cursor-pointer" id="header-model-selector">
+                    <span id="current-model-name" class="font-semibold text-gray-200">Gemini 2.5 Flash</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                </div>
+            </div>
+            <button onclick="startNewChat()" class="p-2 rounded-md hover:bg-gray-800 text-gray-400 lg:hidden">
+                <i data-lucide="square-pen" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <!-- Chat Area -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
+            <!-- Welcome Screen (Shown when empty) -->
+            <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto px-4">
+                <div class="w-16 h-16 bg-brand-900/50 rounded-2xl flex items-center justify-center mb-6 border border-brand-500/30">
+                    <i data-lucide="bot" class="w-8 h-8 text-brand-500"></i>
+                </div>
+                <h2 class="text-3xl font-bold mb-2">How can I help you today?</h2>
+                <p class="text-gray-400 mb-8">Chat, write, or generate stunning images.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                    <button onclick="setInput('Write a poem about space travel')" class="p-4 border border-dark-border rounded-xl text-left hover:bg-gray-800 transition text-sm">
+                        <span class="font-medium text-gray-200 block mb-1">Write a poem</span>
+                        <span class="text-gray-500">about space travel in the future</span>
+                    </button>
+                    <button onclick="setMode('image'); setInput('A futuristic city at sunset, cyberpunk style, high detail')" class="p-4 border border-dark-border rounded-xl text-left hover:bg-gray-800 transition text-sm">
+                        <span class="font-medium text-brand-400 block mb-1">Generate an image</span>
+                        <span class="text-gray-500">of a futuristic cyberpunk city</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages go here -->
+            <div id="messages-wrapper" class="max-w-3xl mx-auto space-y-6 hidden">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- Thinking Indicator -->
+            <div id="thinking-indicator" class="max-w-3xl mx-auto mt-6 hidden">
+                <div class="flex items-start gap-4">
+                    <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <div class="bg-dark-surface border border-dark-border rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1 h-[42px]">
+                        <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-dark-bg via-dark-bg to-transparent pt-6 pb-4 px-4 md:px-6">
+            <div class="max-w-3xl mx-auto relative">
+                <!-- Mode Indicator Toast -->
+                <div id="mode-indicator" class="absolute -top-10 left-0 right-0 flex justify-center hidden opacity-0 transition-opacity duration-300">
+                    <span class="bg-brand-900/80 text-brand-100 text-xs px-3 py-1 rounded-full border border-brand-500/30 backdrop-blur-sm flex items-center gap-1 shadow-lg">
+                        <i data-lucide="image" class="w-3 h-3"></i> Image Generation Mode
+                    </span>
+                </div>
+
+                <div class="relative flex items-end gap-2 bg-dark-surface border border-dark-border rounded-2xl p-2 shadow-lg focus-within:border-gray-500 transition-colors">
+                    
+                    <!-- Toggle Image/Text Mode Button -->
+                    <button id="mode-toggle-btn" onclick="toggleMode()" class="p-3 text-gray-400 hover:text-white rounded-xl hover:bg-gray-800 transition-colors shrink-0 tooltip-trigger" title="Switch to Image Generation">
+                        <i data-lucide="image" class="w-5 h-5" id="mode-icon"></i>
+                    </button>
+
+                    <!-- Textarea -->
+                    <textarea 
+                        id="user-input" 
+                        rows="1" 
+                        class="w-full bg-transparent text-white placeholder-gray-500 border-0 focus:ring-0 resize-none py-3 px-2 max-h-32 overflow-y-auto min-h-[44px]"
+                        placeholder="Message Omni Chat..."
+                        oninput="adjustTextareaHeight(this)"
+                        onkeydown="handleKeydown(event)"
+                    ></textarea>
+
+                    <!-- Send Button -->
+                    <button id="send-btn" onclick="handleSend()" class="p-3 bg-white text-black rounded-xl hover:bg-gray-200 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="text-center mt-2">
+                    <p class="text-[10px] text-gray-500">AI can make mistakes. Check important info.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Full Screen Image Modal -->
+    <div id="image-modal" class="fixed inset-0 z-50 bg-black/90 hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeImageModal()">
+        <img id="modal-image" src="" alt="Full screen preview" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain">
+        <button class="absolute top-4 right-4 p-2 bg-gray-800 text-white rounded-full hover:bg-gray-700">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 z-50 transform transition-all duration-300 translate-y-[-150%] opacity-0 bg-red-900 border border-red-500 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3">
+        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+        <span id="toast-message" class="text-sm">Error message</span>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // --- Core Configuration ---
+        const apiKey = ""; 
+        
+        // --- State Management ---
+        let appState = {
+            chats: [], // Array of { id, title, messages: [{ role, text, imageUrl }] }
+            currentChatId: null,
+            imageHistory: [], // Array of { id, prompt, url }
+            inputMode: 'text', // 'text' or 'image'
+            isWaitingForResponse: false
+        };
+
+        // DOM Elements
+        const DOM = {
+            sidebar: document.getElementById('sidebar'),
+            sidebarOverlay: document.getElementById('sidebarOverlay'),
+            chatContainer: document.getElementById('chat-container'),
+            messagesWrapper: document.getElementById('messages-wrapper'),
+            welcomeScreen: document.getElementById('welcome-screen'),
+            userInput: document.getElementById('user-input'),
+            sendBtn: document.getElementById('send-btn'),
+            modeToggleBtn: document.getElementById('mode-toggle-btn'),
+            modeIcon: document.getElementById('mode-icon'),
+            modeIndicator: document.getElementById('mode-indicator'),
+            currentModelName: document.getElementById('current-model-name'),
+            thinkingIndicator: document.getElementById('thinking-indicator'),
+            chatHistoryList: document.getElementById('chat-history-list'),
+            imageHistoryList: document.getElementById('image-history-list'),
+            tabChats: document.getElementById('tab-chats'),
+            tabImages: document.getElementById('tab-images'),
+            imageModal: document.getElementById('image-modal'),
+            modalImage: document.getElementById('modal-image'),
+            toast: document.getElementById('toast'),
+            toastMessage: document.getElementById('toast-message')
+        };
+
+        // --- Initialization ---
+        function init() {
+            startNewChat();
+            renderSidebar();
+            // Optional: load from localStorage if desired, but sticking to in-memory as default per guidelines for simple apps unless storage requested.
+        }
+
+        // --- API Integration (with Exponential Backoff) ---
+        async function fetchWithRetry(url, options, retries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(`HTTP error! status: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                    }
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    console.log(`Retry ${i + 1}/${retries} after ${delays[i]}ms due to: ${e.message}`);
+                    await new Promise(res => setTimeout(res, delays[i]));
+                }
+            }
+        }
+
+        async function generateTextAPI(messages) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            // Format for Gemini API
+            const contents = messages.map(m => ({
+                role: m.role === 'ai' ? 'model' : 'user',
+                parts: [{ text: m.text }]
+            }));
+
+            const payload = { contents };
+
+            const data = await fetchWithRetry(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+        }
+
+        async function generateImageAPI(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+            const payload = {
+                instances: { prompt: prompt },
+                parameters: { sampleCount: 1 }
+            };
+
+            const data = await fetchWithRetry(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (data.predictions && data.predictions[0]) {
+                return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+            }
+            throw new Error("Failed to generate image.");
+        }
+
+        // --- Core Logic ---
+
+        function startNewChat() {
+            const chatId = Date.now().toString();
+            appState.chats.unshift({
+                id: chatId,
+                title: 'New Conversation',
+                messages: []
+            });
+            appState.currentChatId = chatId;
+            
+            // Reset UI
+            DOM.messagesWrapper.innerHTML = '';
+            DOM.messagesWrapper.classList.add('hidden');
+            DOM.welcomeScreen.classList.remove('hidden');
+            DOM.userInput.value = '';
+            adjustTextareaHeight(DOM.userInput);
+            setMode('text');
+            
+            if (window.innerWidth < 1024) toggleSidebar(false);
+            renderSidebar();
+        }
+
+        function loadChat(chatId) {
+            appState.currentChatId = chatId;
+            const chat = appState.chats.find(c => c.id === chatId);
+            
+            if (chat.messages.length === 0) {
+                DOM.messagesWrapper.classList.add('hidden');
+                DOM.welcomeScreen.classList.remove('hidden');
+            } else {
+                DOM.welcomeScreen.classList.add('hidden');
+                DOM.messagesWrapper.classList.remove('hidden');
+            }
+
+            renderMessages();
+            if (window.innerWidth < 1024) toggleSidebar(false);
+            renderSidebar();
+        }
+
+        async function handleSend() {
+            const text = DOM.userInput.value.trim();
+            if (!text || appState.isWaitingForResponse) return;
+
+            // Hide welcome screen
+            DOM.welcomeScreen.classList.add('hidden');
+            DOM.messagesWrapper.classList.remove('hidden');
+
+            const currentChat = appState.chats.find(c => c.id === appState.currentChatId);
+            
+            // Generate title if it's the first message
+            if (currentChat.messages.length === 0) {
+                currentChat.title = text.length > 25 ? text.substring(0, 25) + '...' : text;
+                renderSidebar();
+            }
+
+            // Add user message to state
+            currentChat.messages.push({ role: 'user', text: text });
+            
+            // Clear input and reset height
+            DOM.userInput.value = '';
+            adjustTextareaHeight(DOM.userInput);
+            
+            // Update UI
+            renderMessages();
+            scrollToBottom();
+            setWaitingState(true);
+
+            const mode = appState.inputMode;
+
+            try {
+                if (mode === 'text') {
+                    // Gather context (last 10 messages to save tokens)
+                    const contextMessages = currentChat.messages.filter(m => m.text).slice(-10);
+                    const responseText = await generateTextAPI(contextMessages);
+                    
+                    currentChat.messages.push({ role: 'ai', text: responseText });
+                } else if (mode === 'image') {
+                    const imageUrl = await generateImageAPI(text);
+                    
+                    // Add to chat
+                    currentChat.messages.push({ 
+                        role: 'ai', 
+                        text: `Here is the image generated for: "${text}"`,
+                        imageUrl: imageUrl 
+                    });
+
+                    // Add to image history
+                    appState.imageHistory.unshift({
+                        id: Date.now().toString(),
+                        prompt: text,
+                        url: imageUrl
+                    });
+                    
+                    renderImageHistory();
+                    
+                    // Switch back to text mode after generation
+                    setMode('text');
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                showToast(error.message || "An error occurred while generating content.");
+                // Add error message to chat
+                currentChat.messages.push({ 
+                    role: 'ai', 
+                    text: `**Error:** ${error.message || "I encountered an issue connecting to the servers. Please try again."}`,
+                    isError: true
+                });
+            } finally {
+                setWaitingState(false);
+                renderMessages();
+                scrollToBottom();
+            }
+        }
+
+        // --- UI Rendering ---
+
+        function renderMessages() {
+            const currentChat = appState.chats.find(c => c.id === appState.currentChatId);
+            if (!currentChat) return;
+
+            DOM.messagesWrapper.innerHTML = '';
+
+            currentChat.messages.forEach(msg => {
+                const isUser = msg.role === 'user';
+                const wrapper = document.createElement('div');
+                wrapper.className = `flex gap-4 w-full ${isUser ? 'justify-end' : 'justify-start'}`;
+
+                let innerHTML = '';
+
+                if (isUser) {
+                    innerHTML = `
+                        <div class="max-w-[80%] bg-dark-surface border border-dark-border rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm text-gray-100 whitespace-pre-wrap break-words">
+                            ${escapeHTML(msg.text)}
+                        </div>
+                    `;
+                } else {
+                    const parsedText = marked.parse(msg.text || '');
+                    const imageHtml = msg.imageUrl ? `
+                        <div class="mt-3 relative group">
+                            <img src="${msg.imageUrl}" alt="Generated image" class="rounded-xl max-w-full h-auto cursor-pointer border border-dark-border shadow-md" onclick="openImageModal('${msg.imageUrl}')">
+                            <button onclick="downloadImage('${msg.imageUrl}', 'omni-image.png')" class="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    ` : '';
+
+                    const iconColor = msg.isError ? 'text-red-500' : 'text-white';
+                    const iconBg = msg.isError ? 'bg-red-900/50' : 'bg-brand-600';
+
+                    innerHTML = `
+                        <div class="w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0 mt-1">
+                            <i data-lucide="sparkles" class="w-4 h-4 ${iconColor}"></i>
+                        </div>
+                        <div class="max-w-[80%] min-w-0">
+                            <div class="prose prose-invert prose-sm md:prose-base max-w-none markdown-body text-gray-200">
+                                ${parsedText}
+                            </div>
+                            ${imageHtml}
+                            <div class="flex items-center gap-2 mt-2">
+                                <button onclick="copyToClipboard(this)" data-content="${escapeHTML(msg.text)}" class="p-1.5 text-gray-500 hover:text-gray-300 rounded hover:bg-gray-800 transition-colors" title="Copy text">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                wrapper.innerHTML = innerHTML;
+                DOM.messagesWrapper.appendChild(wrapper);
+            });
+
+            // Re-initialize icons for newly added elements
+            lucide.createIcons();
+        }
+
+        function renderSidebar() {
+            // Render Chat History
+            DOM.chatHistoryList.innerHTML = '';
+            appState.chats.forEach(chat => {
+                const btn = document.createElement('button');
+                const isActive = chat.id === appState.currentChatId;
+                btn.className = `w-full text-left px-3 py-2.5 rounded-lg text-sm truncate transition-colors flex items-center gap-2 group
+                    ${isActive ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'}`;
+                btn.onclick = () => loadChat(chat.id);
+                
+                btn.innerHTML = `
+                    <i data-lucide="message-square" class="w-4 h-4 shrink-0"></i>
+                    <span class="truncate flex-1">${escapeHTML(chat.title)}</span>
+                `;
+                DOM.chatHistoryList.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function renderImageHistory() {
+            DOM.imageHistoryList.innerHTML = '';
+            if (appState.imageHistory.length === 0) {
+                DOM.imageHistoryList.innerHTML = `<div class="col-span-2 text-center text-sm text-gray-500 mt-4">No images generated yet.</div>`;
+                return;
+            }
+
+            appState.imageHistory.forEach(img => {
+                const div = document.createElement('div');
+                div.className = "relative group aspect-square rounded-lg overflow-hidden bg-gray-800 border border-dark-border cursor-pointer";
+                div.onclick = () => openImageModal(img.url);
+                div.innerHTML = `
+                    <img src="${img.url}" class="w-full h-full object-cover" alt="History thumbnail">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                        <p class="text-[10px] text-white line-clamp-2 leading-tight">${escapeHTML(img.prompt)}</p>
+                    </div>
+                `;
+                DOM.imageHistoryList.appendChild(div);
+            });
+        }
+
+        // --- Event Handlers & Helpers ---
+
+        function handleKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        }
+
+        function adjustTextareaHeight(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 128) + 'px'; // Max height ~128px
+        }
+
+        function setInput(text) {
+            DOM.userInput.value = text;
+            adjustTextareaHeight(DOM.userInput);
+            DOM.userInput.focus();
+        }
+
+        function toggleMode() {
+            setMode(appState.inputMode === 'text' ? 'image' : 'text');
+        }
+
+        function setMode(mode) {
+            appState.inputMode = mode;
+            if (mode === 'image') {
+                DOM.modeIcon.setAttribute('data-lucide', 'image');
+                DOM.modeIcon.classList.add('text-brand-500');
+                DOM.userInput.placeholder = "Describe the image you want...";
+                DOM.currentModelName.textContent = "Imagen 4.0";
+                
+                // Show indicator toast
+                DOM.modeIndicator.classList.remove('hidden');
+                setTimeout(() => {
+                    DOM.modeIndicator.classList.remove('opacity-0');
+                    DOM.modeIndicator.classList.add('opacity-100');
+                }, 10);
+                setTimeout(() => {
+                    DOM.modeIndicator.classList.remove('opacity-100');
+                    DOM.modeIndicator.classList.add('opacity-0');
+                    setTimeout(() => DOM.modeIndicator.classList.add('hidden'), 300);
+                }, 3000);
+
+            } else {
+                DOM.modeIcon.setAttribute('data-lucide', 'message-square');
+                DOM.modeIcon.classList.remove('text-brand-500');
+                DOM.userInput.placeholder = "Message Omni Chat...";
+                DOM.currentModelName.textContent = "Gemini 2.5 Flash";
+            }
+            lucide.createIcons();
+        }
+
+        function toggleSidebar(forceOpen = null) {
+            const isClosed = DOM.sidebar.classList.contains('-translate-x-full');
+            const shouldOpen = forceOpen !== null ? forceOpen : isClosed;
+
+            if (shouldOpen) {
+                DOM.sidebar.classList.remove('-translate-x-full');
+                DOM.sidebarOverlay.classList.remove('hidden');
+            } else {
+                DOM.sidebar.classList.add('-translate-x-full');
+                DOM.sidebarOverlay.classList.add('hidden');
+            }
+        }
+
+        function switchTab(tab) {
+            if (tab === 'chats') {
+                DOM.tabChats.className = "flex-1 pb-2 text-sm font-medium border-b-2 border-brand-500 text-brand-500";
+                DOM.tabImages.className = "flex-1 pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300";
+                DOM.chatHistoryList.classList.remove('hidden');
+                DOM.imageHistoryList.classList.add('hidden');
+                DOM.imageHistoryList.classList.remove('grid');
+            } else {
+                DOM.tabImages.className = "flex-1 pb-2 text-sm font-medium border-b-2 border-brand-500 text-brand-500";
+                DOM.tabChats.className = "flex-1 pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300";
+                DOM.imageHistoryList.classList.remove('hidden');
+                DOM.imageHistoryList.classList.add('grid');
+                DOM.chatHistoryList.classList.add('hidden');
+                renderImageHistory();
+            }
+        }
+
+        function setWaitingState(isWaiting) {
+            appState.isWaitingForResponse = isWaiting;
+            DOM.sendBtn.disabled = isWaiting;
+            DOM.userInput.disabled = isWaiting;
+            
+            if (isWaiting) {
+                DOM.thinkingIndicator.classList.remove('hidden');
+                DOM.sendBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>`;
+            } else {
+                DOM.thinkingIndicator.classList.add('hidden');
+                DOM.sendBtn.innerHTML = `<i data-lucide="arrow-up" class="w-5 h-5"></i>`;
+            }
+            lucide.createIcons();
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                DOM.chatContainer.scrollTo({
+                    top: DOM.chatContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        function copyToClipboard(btn) {
+            const content = btn.getAttribute('data-content');
+            // Using older execCommand approach for broader iframe compatibility per instructions
+            const textarea = document.createElement('textarea');
+            textarea.value = content;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                const icon = btn.querySelector('i');
+                icon.setAttribute('data-lucide', 'check');
+                icon.classList.add('text-green-500');
+                lucide.createIcons();
+                setTimeout(() => {
+                    icon.setAttribute('data-lucide', 'copy');
+                    icon.classList.remove('text-green-500');
+                    lucide.createIcons();
+                }, 2000);
+            } catch (err) {
+                showToast('Failed to copy text');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function openImageModal(url) {
+            DOM.modalImage.src = url;
+            DOM.imageModal.classList.remove('hidden');
+            DOM.imageModal.classList.add('flex');
+        }
+
+        function closeImageModal() {
+            DOM.imageModal.classList.add('hidden');
+            DOM.imageModal.classList.remove('flex');
+        }
+
+        function downloadImage(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function showToast(message) {
+            DOM.toastMessage.textContent = message;
+            DOM.toast.classList.remove('translate-y-[-150%]', 'opacity-0');
+            
+            setTimeout(() => {
+                DOM.toast.classList.add('translate-y-[-150%]', 'opacity-0');
+            }, 4000);
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Run setup
+        init();
+
+    </script>
+</body>
+</html>
+
+```

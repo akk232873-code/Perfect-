@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="hi" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Omni Chat - Mobile Friendly</title>
+    <title>Omni Chat</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -36,7 +35,6 @@
         }
     </script>
     <style>
-        /* Custom scrollbar for desktop */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -49,7 +47,6 @@
             border-radius: 10px;
         }
         
-        /* Markdown Styles inside Chat */
         .markdown-body p { margin-bottom: 0.75em; line-height: 1.6; }
         .markdown-body p:last-child { margin-bottom: 0; }
         .markdown-body pre { background: #050508; padding: 0.85em; border-radius: 0.5rem; overflow-x: auto; margin: 0.75em 0; border: 1px solid #1f1f2e; }
@@ -59,10 +56,15 @@
         .markdown-body ol { list-style-type: decimal; padding-left: 1.25em; margin-bottom: 0.75em; }
         .markdown-body strong { font-weight: 700; color: #ffffff; }
 
-        /* Mobile layout fixes */
         body {
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            max-width: 100%;
+            height: 100dvh;
+            overflow: hidden;
         }
         
         .typing-dot {
@@ -77,43 +79,52 @@
         }
     </style>
 </head>
-<body class="bg-dark-bg text-gray-200 h-[100dvh] w-full overflow-hidden flex font-sans antialiased">
+<body class="bg-dark-bg text-gray-200 flex font-sans antialiased overflow-hidden">
 
-    <!-- Sidebar Overlay for Mobile (Tap to close) -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/80 z-40 hidden lg:hidden transition-opacity duration-300" onclick="toggleSidebar(false)"></div>
+    <!-- Failsafe Script for Rogue Text (In case of copy-paste error) -->
+    <script>
+        if (document.body && document.body.firstChild && document.body.firstChild.nodeType === 3) {
+            if (document.body.firstChild.textContent.includes('```')) {
+                document.body.firstChild.textContent = '';
+            }
+        }
+    </script>
 
-    <!-- API Key Settings Modal -->
-    <div id="api-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md hidden">
-        <div class="bg-dark-surface border border-dark-border rounded-2xl max-w-md w-full p-5 shadow-2xl relative">
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/85 z-40 hidden lg:hidden transition-opacity duration-300" onclick="toggleSidebar(false)"></div>
+
+    <!-- API Settings Modal -->
+    <div id="api-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 backdrop-blur-md hidden">
+        <div class="bg-dark-surface border border-dark-border rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
             <button onclick="toggleApiModal(false)" class="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <div class="flex items-center gap-3 mb-4">
                 <div class="p-2 bg-brand-900/50 text-brand-500 rounded-lg">
-                    <i data-lucide="key" class="w-5 h-5"></i>
+                    <i data-lucide="key" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-lg font-bold text-white">Gemini API Key Setup</h3>
+                <h3 class="text-xl font-bold text-white">API Key Setup</h3>
             </div>
-            <p class="text-gray-400 text-xs mb-4 leading-relaxed">
-                Apni Google AI Studio API key yahan dalein. Ye key aapke browser me locally safe rahegi. Google AI Studio se aap ise free me le sakte hain.
+            <p class="text-gray-400 text-xs mb-5 leading-relaxed">
+                Apni Google AI Studio API key yahan dalein. Yeh key browser ke local storage me safely save rahegi.
             </p>
             <input 
                 id="api-key-input" 
                 type="password" 
-                class="w-full bg-dark-input border border-dark-border text-white text-sm rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-brand-500 transition-colors"
+                class="w-full bg-dark-input border border-dark-border text-white text-sm rounded-xl px-4 py-3.5 mb-5 focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="AIzaSy..."
             >
             <div class="flex gap-3 justify-end">
-                <button onclick="saveApiKey()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition-colors">
-                    Key Save Karein
+                <button onclick="saveApiKey()" class="w-full px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-bold transition-colors shadow-lg shadow-brand-600/20">
+                    Save Securely
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Left Sidebar -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-dark-surface border-r border-dark-border z-45 transform -translate-x-full lg:translate-x-0 lg:static lg:flex transition-transform duration-300 ease-in-out flex flex-col h-full">
-        <!-- Logo and Close Button -->
+    <!-- Left Sidebar (Solid Dark Background to prevent overlap transparency) -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#0c0c11] border-r border-dark-border z-45 transform -translate-x-full lg:translate-x-0 lg:static lg:flex transition-transform duration-300 ease-in-out flex flex-col h-full shrink-0 shadow-2xl lg:shadow-none">
+        
         <div class="p-4 flex items-center justify-between border-b border-dark-border shrink-0">
             <h1 class="text-lg font-bold text-white flex items-center gap-2">
                 <i data-lucide="sparkles" class="text-brand-500 fill-brand-500/25"></i>
@@ -124,7 +135,6 @@
             </button>
         </div>
 
-        <!-- New Chat Trigger Button -->
         <div class="p-3 shrink-0">
             <button onclick="startNewChat()" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl transition-colors font-semibold text-sm shadow-md">
                 <i data-lucide="plus" class="w-4 h-4"></i>
@@ -132,51 +142,38 @@
             </button>
         </div>
 
-        <!-- Sidebar Navigation Tabs -->
         <div class="flex border-b border-dark-border px-3 shrink-0">
             <button id="tab-chats" onclick="switchTab('chats')" class="flex-1 pb-2.5 text-xs font-semibold border-b-2 border-brand-500 text-brand-500 flex items-center justify-center gap-1.5">
-                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                Chats History
+                <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Chats
             </button>
             <button id="tab-images" onclick="switchTab('images')" class="flex-1 pb-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5">
-                <i data-lucide="image" class="w-3.5 h-3.5"></i>
-                Images History
+                <i data-lucide="image" class="w-3.5 h-3.5"></i> Images
             </button>
         </div>
 
-        <!-- Chat List Wrapper -->
-        <div id="chat-history-list" class="flex-1 overflow-y-auto p-2 space-y-1">
-            <!-- Dynamic elements load here -->
-        </div>
+        <div id="chat-history-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+        <div id="image-history-list" class="flex-1 overflow-y-auto p-2 space-y-2 hidden grid grid-cols-2 gap-2 content-start"></div>
 
-        <!-- Generated Images Gallery -->
-        <div id="image-history-list" class="flex-1 overflow-y-auto p-2 space-y-2 hidden grid grid-cols-2 gap-2 content-start">
-            <!-- Dynamic images load here -->
-        </div>
-
-        <!-- Bottom API Config Section -->
         <div class="p-3 border-t border-dark-border shrink-0">
-            <button onclick="toggleApiModal(true)" class="w-full flex items-center justify-between px-3 py-2 bg-dark-input hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all border border-dark-border text-xs">
-                <span class="flex items-center gap-1.5">
-                    <i data-lucide="key" class="w-3.5 h-3.5 text-brand-500"></i>
-                    <span id="api-status-text">Configure API Key</span>
+            <div class="flex items-center justify-between text-xs text-gray-500 px-2 py-1">
+                <span>API Configuration:</span>
+                <span id="sidebar-api-badge" class="flex items-center gap-1.5">
+                    <span id="api-status-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span id="api-status-text" class="font-medium">Not Loaded</span>
                 </span>
-                <span id="api-status-badge" class="w-2 h-2 rounded-full bg-red-500"></span>
-            </button>
+            </div>
         </div>
     </aside>
 
-    <!-- Main Dynamic Content Panel (Flex container to prevent layout shifting) -->
-    <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+    <!-- Main Chat Workspace -->
+    <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative bg-dark-bg">
         
-        <!-- Header Nav bar -->
-        <header class="h-14 flex items-center justify-between px-4 border-b border-dark-border bg-dark-surface/90 backdrop-blur-md shrink-0">
+        <header class="h-14 flex items-center justify-between px-4 border-b border-dark-border bg-dark-surface shrink-0 z-10">
             <div class="flex items-center gap-2">
                 <button onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-xl hover:bg-gray-800 text-gray-400">
                     <i data-lucide="menu" class="w-5 h-5"></i>
                 </button>
                 
-                <!-- Model Switcher Dropdown menu -->
                 <div class="relative">
                     <button onclick="toggleModelDropdown()" id="model-selector-btn" class="flex items-center gap-1.5 bg-dark-input hover:bg-gray-800 px-3 py-1.5 rounded-xl border border-dark-border transition-colors text-xs font-bold text-gray-200">
                         <i id="model-indicator-icon" data-lucide="bot" class="w-3.5 h-3.5 text-brand-500"></i>
@@ -184,72 +181,70 @@
                         <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500"></i>
                     </button>
                     
-                    <!-- Dropdown Options -->
                     <div id="model-dropdown" class="absolute left-0 mt-2 w-60 bg-dark-surface border border-dark-border rounded-xl shadow-2xl p-1.5 hidden z-50">
-                        <p class="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase tracking-wider">Engine Badlein</p>
+                        <p class="text-[9px] text-gray-500 px-2 py-1 font-bold uppercase tracking-wider">Engine Options</p>
                         <button onclick="selectModel('gemini-2.5', 'Gemini 2.5 Flash', 'bot')" class="w-full text-left p-2 hover:bg-gray-800/80 rounded-lg flex items-start gap-2 text-xs transition-colors text-gray-200">
                             <i data-lucide="bot" class="w-3.5 h-3.5 mt-0.5 text-brand-500"></i>
                             <div>
                                 <div class="font-semibold">Gemini 2.5 Flash</div>
-                                <div class="text-[10px] text-gray-500">Super-fast and intelligent mode</div>
+                                <div class="text-[10px] text-gray-500">Fast default response mode</div>
                             </div>
                         </button>
                         <button onclick="selectModel('chatgpt-style', 'ChatGPT Mode', 'sparkles')" class="w-full text-left p-2 hover:bg-gray-800/80 rounded-lg flex items-start gap-2 text-xs transition-colors text-gray-200">
                             <i data-lucide="sparkles" class="w-3.5 h-3.5 mt-0.5 text-green-500"></i>
                             <div>
                                 <div class="font-semibold">ChatGPT Mode</div>
-                                <div class="text-[10px] text-gray-500">Creative and explanatory style</div>
+                                <div class="text-[10px] text-gray-500">Creative & detailed structure</div>
                             </div>
                         </button>
                         <button onclick="selectModel('imagen-4', 'Imagen 4.0 Studio', 'image')" class="w-full text-left p-2 hover:bg-gray-800/80 rounded-lg flex items-start gap-2 text-xs transition-colors text-gray-200">
                             <i data-lucide="image" class="w-3.5 h-3.5 mt-0.5 text-purple-500"></i>
                             <div>
                                 <div class="font-semibold">Imagen 4.0 Art</div>
-                                <div class="text-[10px] text-gray-500">AI photo and image generator</div>
+                                <div class="text-[10px] text-gray-500">Stunning AI Art generation</div>
                             </div>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Header Utility Actions -->
-            <div class="flex items-center gap-1">
+            <!-- Top Header Action Buttons -->
+            <div class="flex items-center gap-1.5">
+                <button onclick="toggleApiModal(true)" class="p-2 rounded-xl bg-brand-500/10 hover:bg-brand-500/20 text-brand-500 flex items-center gap-1.5 transition-colors" title="Set API Key">
+                    <i data-lucide="key" class="w-4 h-4"></i>
+                    <span class="text-[10px] font-bold hidden sm:inline">Set Key</span>
+                </button>
                 <button onclick="startNewChat()" class="p-2 rounded-xl hover:bg-gray-800 text-gray-400" title="New Chat">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                 </button>
             </div>
         </header>
 
-        <!-- Message Stream View Area -->
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6">
-            <!-- Welcome Splash -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 pb-4">
+            
             <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto px-4 py-4">
-                <div class="w-12 h-12 bg-brand-900/40 border border-brand-500/20 rounded-xl flex items-center justify-center mb-4">
-                    <i data-lucide="sparkles" class="w-6 h-6 text-brand-500 fill-brand-500/10"></i>
+                <div class="w-14 h-14 bg-brand-900/40 border border-brand-500/20 rounded-2xl flex items-center justify-center mb-5 shadow-inner">
+                    <i data-lucide="sparkles" class="w-7 h-7 text-brand-500 fill-brand-500/10"></i>
                 </div>
-                <h2 class="text-2xl font-extrabold text-white mb-1 tracking-tight">Omni Chat AI</h2>
-                <p class="text-gray-400 mb-6 text-xs leading-relaxed">
-                    Gemini 2.5 aur Imagen 4.0 se powered professional chat panel. Kuch bhi sawaal poochein ya beautiful images banayein.
+                <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Omni Chat AI</h2>
+                <p class="text-gray-400 mb-8 text-xs leading-relaxed">
+                    Gemini 2.5 aur Imagen 4.0 se powered professional chat panel. Code likhein, sawaal poochein ya images banayein.
                 </p>
                 
-                <div class="grid grid-cols-1 gap-2 w-full">
-                    <button onclick="setInput('Suryagrahan kaise hota hai? Simple bhasha me samjhayein.')" class="p-3.5 border border-dark-border bg-dark-surface hover:bg-gray-800/50 rounded-xl text-left transition text-xs">
-                        <span class="font-semibold text-white block mb-0.5">Suryagrahan Kaise Hota Hai?</span>
-                        <span class="text-gray-500 text-[10px]">Pure process ko simple bhasha me samjhayein</span>
+                <div class="grid grid-cols-1 gap-2.5 w-full">
+                    <button onclick="setInput('Space exploration par ek chota essay likho Hindi me.')" class="p-4 border border-dark-border bg-dark-surface hover:bg-gray-800/60 rounded-xl text-left transition-colors text-xs">
+                        <span class="font-semibold text-white block mb-1">Space par Essay Likho</span>
+                        <span class="text-gray-500 text-[10px]">Simple language me samjhayein</span>
                     </button>
-                    <button onclick="selectModel('imagen-4', 'Imagen 4.0 Studio', 'image'); setInput('A beautiful modern Indian house design in hills, architectural render')" class="p-3.5 border border-dark-border bg-dark-surface hover:bg-gray-800/50 rounded-xl text-left transition text-xs">
-                        <span class="font-semibold text-purple-400 block mb-0.5">Generate Image Render</span>
-                        <span class="text-gray-500 text-[10px]">Indian house design ki visual photo banayein</span>
+                    <button onclick="selectModel('imagen-4', 'Imagen 4.0 Studio', 'image'); setInput('A futuristic city at sunset with flying cars, cyberpunk style, hyper realistic')" class="p-4 border border-dark-border bg-dark-surface hover:bg-gray-800/60 rounded-xl text-left transition-colors text-xs">
+                        <span class="font-semibold text-purple-400 block mb-1">Generate Artwork</span>
+                        <span class="text-gray-500 text-[10px]">Futuristic city visual render</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Messages List -->
-            <div id="messages-wrapper" class="max-w-3xl mx-auto space-y-5 hidden">
-                <!-- Message structures load here -->
-            </div>
+            <div id="messages-wrapper" class="max-w-3xl mx-auto space-y-5 hidden"></div>
             
-            <!-- Live Thinking Loader -->
             <div id="thinking-indicator" class="max-w-3xl mx-auto mt-4 hidden">
                 <div class="flex items-start gap-3">
                     <div class="w-8 h-8 rounded-xl border border-dark-border bg-dark-surface flex items-center justify-center shrink-0 shadow-sm">
@@ -258,7 +253,7 @@
                     <div class="flex-1 bg-dark-surface border border-dark-border rounded-xl p-3 max-w-[85%]">
                         <div class="flex items-center gap-1.5 mb-2 text-[10px] font-bold text-brand-400 tracking-wider uppercase">
                             <i data-lucide="brain-circuit" class="w-3 h-3 animate-pulse"></i>
-                            <span id="thinking-model-status">Omni Soch Raha Hai...</span>
+                            <span id="thinking-model-status">Soch Raha Hai...</span>
                         </div>
                         <div class="space-y-1.5">
                             <div class="h-1.5 bg-brand-900/30 rounded w-11/12 animate-pulse"></div>
@@ -274,71 +269,70 @@
             </div>
         </div>
 
-        <!-- Input Bar Zone (Non-absolute, regular flex item to prevent overlap/sliding bugs) -->
-        <div class="shrink-0 bg-dark-bg border-t border-dark-border/40 p-3 md:p-4 pb-6">
+        <div class="shrink-0 bg-dark-bg border-t border-dark-border/40 p-3 md:p-4 pb-4">
             <div class="max-w-3xl mx-auto relative">
                 
-                <!-- Floating Mode Indicator Banner -->
                 <div id="mode-toast" class="absolute -top-11 left-0 right-0 flex justify-center hidden opacity-0 transition-opacity duration-300 pointer-events-none">
                     <span id="mode-toast-text" class="bg-brand-900/90 text-brand-100 text-[10px] px-3 py-1 rounded-full border border-brand-500/30 backdrop-blur-md flex items-center gap-1.5 shadow-xl">
-                        <i data-lucide="image" class="w-3 h-3 text-purple-400"></i> Mode Badla Gaya
+                        <i data-lucide="image" class="w-3 h-3 text-purple-400"></i> Mode Updated
                     </span>
                 </div>
 
-                <!-- Input area layout box -->
                 <div class="bg-dark-surface border border-dark-border rounded-xl p-1.5 shadow-lg focus-within:border-brand-500/40 transition-all">
-                    <div class="flex items-end gap-1">
+                    <div class="flex items-end gap-1.5">
                         
-                        <!-- Quick Art Switcher Shortcut Button -->
-                        <button id="image-shortcut-btn" onclick="toggleArtModeShortcut()" class="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors shrink-0" title="Art generator toggle">
+                        <button id="image-shortcut-btn" onclick="toggleArtModeShortcut()" class="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors shrink-0">
                             <i data-lucide="image" class="w-5 h-5"></i>
                         </button>
 
                         <textarea 
                             id="user-input" 
                             rows="1" 
-                            class="w-full bg-transparent text-white placeholder-gray-500 border-0 focus:ring-0 resize-none py-2 px-1 max-h-28 overflow-y-auto min-h-[38px] text-[15px] focus:outline-none"
+                            class="w-full bg-transparent text-white placeholder-gray-500 border-0 focus:ring-0 resize-none py-2 px-1 max-h-28 overflow-y-auto min-h-[40px] text-[15px] focus:outline-none"
                             placeholder="Kuch bhi poochein..."
                             oninput="adjustTextareaHeight(this)"
                             onkeydown="handleKeydown(event)"
                         ></textarea>
 
-                        <!-- Send Button -->
                         <button id="send-btn" onclick="handleSend()" class="p-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed">
                             <i data-lucide="arrow-up" class="w-5 h-5"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between mt-2 px-1">
-                    <p class="text-[9px] text-gray-500 leading-none">Free unlimited mode. Save your API key for fast server speed.</p>
-                    <button onclick="toggleApiModal(true)" class="text-[9px] text-brand-400 hover:underline leading-none">Custom Key Configure</button>
+                <!-- FIXED FOOTER: Stacked beautifully on mobile -->
+                <div class="flex flex-col sm:flex-row items-center justify-between mt-3 px-1 gap-2">
+                    <p class="text-[9px] text-gray-500 text-center sm:text-left leading-tight w-full sm:w-auto">
+                        Free unlimited mode. API key set karein fast speed aur reliability ke liye.
+                    </p>
+                    <button onclick="toggleApiModal(true)" class="text-[10px] font-semibold text-brand-400 hover:bg-brand-500/10 px-2 py-1 rounded transition-colors w-full sm:w-auto text-center border border-brand-500/20 sm:border-transparent">
+                        Key Configure Karein
+                    </button>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Large Screen Photo Overlay Modal -->
+    <!-- Photo Modal -->
     <div id="image-modal" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 backdrop-blur-md" onclick="closeImageModal()">
-        <img id="modal-image" src="" alt="Full Render Preview" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain border border-white/5">
+        <img id="modal-image" src="" alt="Artwork Preview" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain border border-white/5">
         <button class="absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full">
             <i data-lucide="x" class="w-5 h-5"></i>
         </button>
     </div>
 
-    <!-- Toast Banner Notifications -->
+    <!-- Alert Toast -->
     <div id="toast" class="fixed bottom-24 right-4 md:right-8 z-50 transform transition-all duration-300 translate-y-[150%] opacity-0 bg-red-950/90 border border-red-500 text-red-200 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 backdrop-blur-md">
         <i data-lucide="alert-circle" class="w-4 h-4 text-red-400 shrink-0"></i>
         <span id="toast-message" class="text-xs font-semibold">Alert Info</span>
     </div>
 
     <script>
-        // State Store
         let appState = {
             chats: [],
             currentChatId: null,
             imageHistory: [],
-            currentModel: 'gemini-2.5', // 'gemini-2.5', 'chatgpt-style', 'imagen-4'
+            currentModel: 'gemini-2.5', 
             apiKey: '',
             isWaiting: false
         };
@@ -363,7 +357,7 @@
             tabImages: document.getElementById('tab-images'),
             apiModal: document.getElementById('api-modal'),
             apiKeyInput: document.getElementById('api-key-input'),
-            apiStatusBadge: document.getElementById('api-status-badge'),
+            apiStatusDot: document.getElementById('api-status-dot'),
             apiStatusText: document.getElementById('api-status-text'),
             modeToast: document.getElementById('mode-toast'),
             modeToastText: document.getElementById('mode-toast-text'),
@@ -380,18 +374,19 @@
             startNewChat();
         });
 
-        // Config Controls
         function loadSavedApiKey() {
             const saved = localStorage.getItem('omnichat_api_key') || '';
             if (saved) {
                 appState.apiKey = saved;
                 DOM.apiKeyInput.value = saved;
-                DOM.apiStatusBadge.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
-                DOM.apiStatusText.textContent = "Custom Key active";
+                DOM.apiStatusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                DOM.apiStatusText.textContent = "Key Active";
+                DOM.apiStatusText.className = "font-medium text-green-500";
             } else {
                 appState.apiKey = "";
-                DOM.apiStatusBadge.className = "w-2 h-2 rounded-full bg-red-500";
-                DOM.apiStatusText.textContent = "Configure API Key";
+                DOM.apiStatusDot.className = "w-2 h-2 rounded-full bg-red-500";
+                DOM.apiStatusText.textContent = "Key Missing";
+                DOM.apiStatusText.className = "font-medium text-red-400";
             }
         }
 
@@ -401,7 +396,7 @@
             appState.apiKey = val;
             loadSavedApiKey();
             toggleApiModal(false);
-            showNotifyToast("Key ko safaltapurvak save kar liya gaya!", "check-circle", "bg-green-950/95 border-green-500 text-green-200");
+            showNotifyToast("Key save ho gayi!", "check-circle", "bg-green-950/95 border-green-500 text-green-200");
         }
 
         function toggleApiModal(show) {
@@ -412,7 +407,6 @@
             }
         }
 
-        // Fetch backoff
         async function fetchWithExponentialBackoff(url, options, retries = 5) {
             let delay = 1000;
             for (let i = 0; i < retries; i++) {
@@ -442,29 +436,17 @@
             
             let formattedContents = [];
             if (promptInjection) {
-                formattedContents.push({
-                    role: 'user',
-                    parts: [{ text: promptInjection }]
-                });
-                formattedContents.push({
-                    role: 'model',
-                    parts: [{ text: "Understood. I am configured as your optimized assistant profile." }]
-                });
+                formattedContents.push({ role: 'user', parts: [{ text: promptInjection }] });
+                formattedContents.push({ role: 'model', parts: [{ text: "Understood." }] });
             }
 
             messages.forEach(m => {
-                formattedContents.push({
-                    role: m.role === 'ai' ? 'model' : 'user',
-                    parts: [{ text: m.text }]
-                });
+                formattedContents.push({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] });
             });
 
             const payload = {
                 contents: formattedContents,
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 8192
-                }
+                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
             };
 
             const data = await fetchWithExponentialBackoff(url, {
@@ -473,7 +455,7 @@
                 body: JSON.stringify(payload)
             });
 
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "Response generate nahi ho payi.";
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "Response error.";
         }
 
         async function callImagenGenerate(prompt) {
@@ -494,17 +476,12 @@
             if (data.predictions && data.predictions[0]?.bytesBase64Encoded) {
                 return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
             }
-            throw new Error("Image output render nahi ho paya.");
+            throw new Error("Render error.");
         }
 
         function startNewChat() {
             const chatId = 'chat_' + Date.now();
-            const newChat = {
-                id: chatId,
-                title: 'Nayi Baat-Cheet',
-                messages: [],
-                model: appState.currentModel
-            };
+            const newChat = { id: chatId, title: 'Nayi Baat-Cheet', messages: [], model: appState.currentModel };
             appState.chats.unshift(newChat);
             appState.currentChatId = chatId;
             
@@ -571,33 +548,19 @@
                     const resultText = await callGeminiText(chat.messages);
                     chat.messages.push({ role: 'ai', text: resultText });
                 } else if (appState.currentModel === 'chatgpt-style') {
-                    const promptInjection = "You are ChatGPT, a helpful, details oriented, extremely creative companion. Answer detailed, well-structured format in Roman Urdu/Hindi. Implement code block formatting where appropriate.";
+                    const promptInjection = "You are ChatGPT. Answer deeply, well structured and implement code block formatting where appropriate.";
                     const resultText = await callGeminiText(chat.messages, promptInjection);
                     chat.messages.push({ role: 'ai', text: resultText });
                 } else if (appState.currentModel === 'imagen-4') {
                     const base64Url = await callImagenGenerate(query);
-                    
-                    chat.messages.push({
-                        role: 'ai',
-                        text: `Aapke prompt ke liye image bana di gayi hai:\n\n*"${query}"*`,
-                        imageUrl: base64Url
-                    });
-
-                    appState.imageHistory.unshift({
-                        id: 'img_' + Date.now(),
-                        prompt: query,
-                        url: base64Url
-                    });
+                    chat.messages.push({ role: 'ai', text: `Aapke prompt ke liye image ban gayi hai:\n\n*"${query}"*`, imageUrl: base64Url });
+                    appState.imageHistory.unshift({ id: 'img_' + Date.now(), prompt: query, url: base64Url });
                     renderImageHistory();
                 }
             } catch (err) {
                 console.error(err);
-                showNotifyToast("Error: Apni Custom API Key ko check karein.", "alert-triangle", "bg-red-950/90 border-red-500 text-red-200");
-                chat.messages.push({
-                    role: 'ai',
-                    text: `### System Alert\nResponse generate karne me dikkat aayi. Kripya apna API key configuration check karein.\n\n*Details: ${err.message || "Timeout"}*`,
-                    isError: true
-                });
+                showNotifyToast("Error: Custom API Key set karein upar menu se.", "alert-triangle", "bg-red-950/90 border-red-500 text-red-200");
+                chat.messages.push({ role: 'ai', text: `### Error\nConnection fail. Please set your API key in settings.\n*Details: ${err.message}*`, isError: true });
             } finally {
                 setWaitingMode(false);
                 renderMessages();
@@ -606,35 +569,26 @@
             }
         }
 
-        // Renderer helpers
         function renderMessages() {
             const chat = appState.chats.find(c => c.id === appState.currentChatId);
             if (!chat) return;
 
             DOM.messagesWrapper.innerHTML = '';
-
             chat.messages.forEach((msg, idx) => {
                 const isUser = msg.role === 'user';
                 const row = document.createElement('div');
                 row.className = `flex gap-3 w-full ${isUser ? 'justify-end' : 'justify-start'}`;
 
-                let parsedContent = '';
                 if (isUser) {
-                    parsedContent = `
-                        <div class="max-w-[85%] bg-brand-600 text-white rounded-xl rounded-tr-sm px-4 py-2.5 shadow-sm text-sm whitespace-pre-wrap break-words">
-                            ${escapeHTML(msg.text)}
-                        </div>
-                    `;
+                    row.innerHTML = `<div class="max-w-[85%] bg-brand-600 text-white rounded-xl rounded-tr-sm px-4 py-2.5 shadow-sm text-sm whitespace-pre-wrap break-words">${escapeHTML(msg.text)}</div>`;
                 } else {
                     const rawHtml = marked.parse(msg.text || '');
                     const imageMarkup = msg.imageUrl ? `
                         <div class="mt-3 relative group rounded-xl overflow-hidden border border-dark-border max-w-sm shadow-xl">
                             <img src="${msg.imageUrl}" class="w-full h-auto cursor-pointer block" onclick="openImageModal('${msg.imageUrl}')" alt="Omni Render">
                             <div class="absolute inset-x-0 bottom-0 bg-black/85 p-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between">
-                                <span class="text-[10px] text-gray-300 truncate">Art generated via Imagen</span>
-                                <button onclick="downloadImageDirect('${msg.imageUrl}', 'render-${idx}.png')" class="p-1 bg-gray-800 text-white rounded">
-                                    <i data-lucide="download" class="w-3 h-3"></i>
-                                </button>
+                                <span class="text-[10px] text-gray-300 truncate">Art by Imagen</span>
+                                <button onclick="downloadImageDirect('${msg.imageUrl}', 'render-${idx}.png')" class="p-1 bg-gray-800 text-white rounded"><i data-lucide="download" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                     ` : '';
@@ -642,65 +596,52 @@
                     const iconColor = msg.isError ? 'text-red-500' : 'text-brand-500';
                     const iconBg = msg.isError ? 'bg-red-950/40 border-red-500/20' : 'bg-dark-surface border-dark-border';
 
-                    parsedContent = `
+                    row.innerHTML = `
                         <div class="w-8 h-8 rounded-xl border ${iconBg} flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                             <i data-lucide="sparkles" class="w-4 h-4 ${iconColor}"></i>
                         </div>
                         <div class="max-w-[85%] min-w-0 flex-1">
-                            <div class="prose prose-invert prose-xs max-w-none markdown-body text-gray-200 text-sm">
-                                ${rawHtml}
-                            </div>
+                            <div class="prose prose-invert prose-xs max-w-none markdown-body text-gray-200 text-sm">${rawHtml}</div>
                             ${imageMarkup}
                             <div class="flex items-center gap-1 mt-2">
-                                <button onclick="copyRawMessage(this)" data-content="${escapeHTML(msg.text)}" class="p-1 text-gray-500 hover:text-gray-300 rounded transition-colors" title="Copy text">
-                                    <i data-lucide="copy" class="w-3 h-3"></i>
-                                </button>
+                                <button onclick="copyRawMessage(this)" data-content="${escapeHTML(msg.text)}" class="p-1 text-gray-500 hover:text-gray-300 rounded transition-colors" title="Copy text"><i data-lucide="copy" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                     `;
                 }
-
-                row.innerHTML = parsedContent;
                 DOM.messagesWrapper.appendChild(row);
             });
-
             lucide.createIcons();
         }
 
         function renderSidebar() {
             DOM.chatHistoryList.innerHTML = '';
             if (appState.chats.length === 0) {
-                DOM.chatHistoryList.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">Koyi active chat nahi hai</p>`;
+                DOM.chatHistoryList.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">Koyi active chat nahi</p>`;
                 return;
             }
-
             appState.chats.forEach(chat => {
                 const isActive = chat.id === appState.currentChatId;
                 const wrapper = document.createElement('div');
                 wrapper.className = `group w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs transition-all ${isActive ? 'bg-brand-900/25 text-brand-400 border border-brand-500/10' : 'text-gray-400 hover:bg-gray-800/30'}`;
-                
                 wrapper.innerHTML = `
                     <button onclick="loadChat('${chat.id}')" class="flex-1 min-w-0 flex items-center gap-2 text-left">
                         <i data-lucide="${chat.model === 'imagen-4' ? 'image' : 'message-square'}" class="w-3.5 h-3.5 shrink-0 opacity-70"></i>
                         <span class="truncate font-medium">${escapeHTML(chat.title)}</span>
                     </button>
-                    <button onclick="deleteChatThread(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400">
-                        <i data-lucide="trash-2" class="w-3 h-3"></i>
-                    </button>
+                    <button onclick="deleteChatThread(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                 `;
                 DOM.chatHistoryList.appendChild(wrapper);
             });
-
             lucide.createIcons();
         }
 
         function renderImageHistory() {
             DOM.imageHistoryList.innerHTML = '';
             if (appState.imageHistory.length === 0) {
-                DOM.imageHistoryList.innerHTML = `<div class="col-span-2 text-center text-xs text-gray-500 py-6">Koyi image generate nahi hui.</div>`;
+                DOM.imageHistoryList.innerHTML = `<div class="col-span-2 text-center text-xs text-gray-500 py-6">Koyi image nahi hui.</div>`;
                 return;
             }
-
             appState.imageHistory.forEach(img => {
                 const block = document.createElement('div');
                 block.className = "relative aspect-square rounded-xl overflow-hidden bg-dark-input border border-dark-border cursor-pointer group shadow-sm";
@@ -716,12 +657,7 @@
         }
 
         function toggleModelDropdown() {
-            const isHidden = DOM.modelDropdown.classList.contains('hidden');
-            if (isHidden) {
-                DOM.modelDropdown.classList.remove('hidden');
-            } else {
-                DOM.modelDropdown.classList.add('hidden');
-            }
+            DOM.modelDropdown.classList.toggle('hidden');
         }
 
         function selectModel(modelId, displayName, iconName, displayModeToast = true) {
@@ -731,45 +667,36 @@
             DOM.modelDropdown.classList.add('hidden');
             
             if (modelId === 'imagen-4') {
-                DOM.userInput.placeholder = "Image prompt likhein jo aap banana chahte hain...";
+                DOM.userInput.placeholder = "Image prompt likhein...";
                 DOM.imageShortcutBtn.className = "p-2.5 text-purple-400 rounded-lg hover:bg-gray-800 transition-colors shrink-0";
             } else {
-                DOM.userInput.placeholder = `Omni se baat karein (${displayName})...`;
+                DOM.userInput.placeholder = `Kuch bhi poochein...`;
                 DOM.imageShortcutBtn.className = "p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors shrink-0";
             }
 
             if (displayModeToast) {
-                DOM.modeToastText.innerHTML = `<i data-lucide="${iconName}" class="w-3.5 h-3.5 text-brand-400"></i> Active Engine: ${displayName}`;
+                DOM.modeToastText.innerHTML = `<i data-lucide="${iconName}" class="w-3.5 h-3.5 text-brand-400"></i> Mode: ${displayName}`;
                 DOM.modeToast.classList.remove('hidden');
+                setTimeout(() => DOM.modeToast.classList.remove('opacity-0'), 10);
                 setTimeout(() => {
-                    DOM.modeToast.classList.remove('opacity-0');
-                    DOM.modeToast.classList.add('opacity-100');
-                }, 10);
-                setTimeout(() => {
-                    DOM.modeToast.classList.remove('opacity-100');
                     DOM.modeToast.classList.add('opacity-0');
                     setTimeout(() => DOM.modeToast.classList.add('hidden'), 300);
                 }, 2000);
             }
-
             lucide.createIcons();
         }
 
         function toggleArtModeShortcut() {
-            if (appState.currentModel === 'imagen-4') {
-                selectModel('gemini-2.5', 'Gemini 2.5 Flash', 'bot');
-            } else {
-                selectModel('imagen-4', 'Imagen 4.0 Studio', 'image');
-            }
+            if (appState.currentModel === 'imagen-4') selectModel('gemini-2.5', 'Gemini 2.5 Flash', 'bot');
+            else selectModel('imagen-4', 'Imagen 4.0 Studio', 'image');
         }
 
         function setWaitingMode(wait) {
             appState.isWaiting = wait;
             DOM.sendBtn.disabled = wait;
             DOM.userInput.disabled = wait;
-            
             if (wait) {
-                DOM.thinkingModelStatus.textContent = `${appState.currentModel === 'imagen-4' ? 'Imagen Image bana raha hai...' : 'Omni Soch raha hai...'}`;
+                DOM.thinkingModelStatus.textContent = `${appState.currentModel === 'imagen-4' ? 'Image bana raha hai...' : 'Soch raha hai...'}`;
                 DOM.thinkingIndicator.classList.remove('hidden');
                 DOM.sendBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>`;
             } else {
@@ -808,14 +735,9 @@
             e.stopPropagation();
             appState.chats = appState.chats.filter(c => c.id !== id);
             if (appState.currentChatId === id) {
-                if (appState.chats.length > 0) {
-                    loadChat(appState.chats[0].id);
-                } else {
-                    startNewChat();
-                }
-            } else {
-                renderSidebar();
-            }
+                if (appState.chats.length > 0) loadChat(appState.chats[0].id);
+                else startNewChat();
+            } else renderSidebar();
         }
 
         function setInput(text) {
@@ -840,10 +762,7 @@
 
         function scrollToBottom() {
             setTimeout(() => {
-                DOM.chatContainer.scrollTo({
-                    top: DOM.chatContainer.scrollHeight,
-                    behavior: 'smooth'
-                });
+                DOM.chatContainer.scrollTo({ top: DOM.chatContainer.scrollHeight, behavior: 'smooth' });
             }, 80);
         }
 
@@ -865,7 +784,7 @@
                     lucide.createIcons();
                 }, 1500);
             } catch (err) {
-                showNotifyToast("Copy karne me error aayi.");
+                showNotifyToast("Copy error.");
             }
             document.body.removeChild(placeholder);
         }
@@ -874,17 +793,12 @@
             DOM.toastMessage.textContent = message;
             const iconEl = DOM.toast.querySelector('i');
             if (iconEl) iconEl.setAttribute('data-lucide', iconName);
-            
             if (customClasses) {
                 DOM.toast.className = `fixed bottom-24 right-4 md:right-8 z-50 transform transition-all duration-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 backdrop-blur-md ${customClasses}`;
             }
-
             lucide.createIcons();
-            
             DOM.toast.classList.remove('translate-y-[150%]', 'opacity-0');
-            setTimeout(() => {
-                DOM.toast.classList.add('translate-y-[150%]', 'opacity-0');
-            }, 4000);
+            setTimeout(() => DOM.toast.classList.add('translate-y-[150%]', 'opacity-0'), 4000);
         }
 
         function openImageModal(url) {
@@ -908,9 +822,7 @@
         }
 
         function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-            );
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
 
         window.addEventListener('click', (e) => {
@@ -921,5 +833,3 @@
     </script>
 </body>
 </html>
-
-```
